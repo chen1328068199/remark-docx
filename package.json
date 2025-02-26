@@ -1,0 +1,91 @@
+{
+  "name": "remark-docx-climsi",
+  "version": "0.1.9",
+  "description": "remark plugin to compile markdown to docx (Microsoft Word, Office Open XML).",
+  "main": "lib/index.js",
+  "module": "lib/index.mjs",
+  "types": "lib/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.mjs",
+      "default": "./lib/index.js"
+    }
+  },
+  "files": [
+    "lib"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "rollup -c",
+    "test": "vitest run",
+    "tsc": "tsc -p . --noEmit",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build",
+    "storybook:test": "concurrently -k -s first -n \"SB,TEST\" -c \"magenta,blue\" \"npm run storybook -- --no-open\" \"wait-on tcp:6006 && test-storybook\"",
+    "typedoc": "typedoc",
+    "prepublishOnly": "npm run typedoc && rimraf lib && npm run build"
+  },
+  "dependencies": {
+    "@unified-latex/unified-latex-util-parse": "1.8.1",
+    "docx": "^8.2.0",
+    "unist-util-visit": "^4.1.2"
+  },
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@storybook/addon-storysource": "^8.4.0",
+    "@storybook/react": "^8.4.0",
+    "@storybook/react-vite": "^8.4.0",
+    "@storybook/source-loader": "^8.4.0",
+    "@storybook/test-runner": "^0.21.0",
+    "@types/adm-zip": "^0.5.0",
+    "@types/mdast": "^3.0.10",
+    "@types/unist": "^2.0.6",
+    "adm-zip": "^0.5.9",
+    "concurrently": "^8.2.2",
+    "docx-preview": "^0.3.0",
+    "file-saver": "^2.0.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-is": "^18.3.1",
+    "remark-footnotes": "^4.0.1",
+    "remark-frontmatter": "^4.0.1",
+    "remark-gfm": "^3.0.1",
+    "remark-math": "^5.1.1",
+    "remark-parse": "^10.0.1",
+    "rimraf": "^5.0.0",
+    "rollup": "^4.17.2",
+    "storybook": "^8.4.0",
+    "tslib": "^2.4.1",
+    "typedoc": "^0.27.9",
+    "typedoc-plugin-markdown": "^4.4.2",
+    "typescript": "^5.0.4",
+    "unified": "^10.1.2",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.4",
+    "wait-on": "^7.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+git@github.com:chen1328068199/remark-docx.git"
+  },
+  "keywords": [
+    "unist",
+    "remark",
+    "mdast",
+    "markdown",
+    "docx",
+    "word",
+    "office",
+    "openxml",
+    "latex",
+    "math"
+  ],
+  "author": "inokawa <stratoooo-taster@yahoo.co.jp> (https://github.com/inokawa/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chen1328068199/remark-docx/issues"
+  },
+  "homepage": "https://github.com/chen1328068199/remark-docx#readme"
+}

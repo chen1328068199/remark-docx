@@ -20,13 +20,15 @@ import {
   FootnoteReferenceRun,
   CheckBox,
 } from "docx";
+import { v4 as uuidv4 } from 'uuid';
 import type { IPropertiesOptions } from "docx/build/file/core-properties";
 import type * as mdast from "./models/mdast";
 import { parseLatex } from "./latex";
 import { invariant, unreachable } from "./utils";
 
-const ORDERED_LIST_REF = "ordered";
 const INDENT = 0.5;
+let NumberingList:any[] = []
+const ORDERED_LIST_REF = "ordered";
 const DEFAULT_NUMBERINGS: ILevelsOptions[] = [
   {
     level: 0,
@@ -153,7 +155,7 @@ export interface ConvertNodesReturn {
   nodes: DocxContent[];
   footnotes: Footnotes;
 }
-
+let doc: Document;
 export const mdastToDocx = async (
   node: mdast.Root,
   {
@@ -168,14 +170,14 @@ export const mdastToDocx = async (
     styles,
     background,
   }: DocxOptions,
-  images: ImageDataMap
+  images: ImageDataMap,
 ): Promise<any> => {
   const { nodes, footnotes } = convertNodes(node.children, {
     deco: {},
     images,
     indent: 0,
   });
-  const doc = new Document({
+  doc = new Document({
     title,
     subject,
     creator,
@@ -193,10 +195,10 @@ export const mdastToDocx = async (
           reference: ORDERED_LIST_REF,
           levels: DEFAULT_NUMBERINGS,
         },
+        ...NumberingList
       ],
     },
   });
-
   switch (output) {
     case "buffer":
       const bufOut = await Packer.toBuffer(doc);
@@ -211,14 +213,15 @@ export const mdastToDocx = async (
 
 const convertNodes = (
   nodes: mdast.Content[],
-  ctx: Context
+  ctx: Context,
+  listReference?: string,
 ): ConvertNodesReturn => {
   const results: DocxContent[] = [];
   let footnotes: Footnotes = {};
   for (const node of nodes) {
     switch (node.type) {
       case "paragraph":
-        results.push(buildParagraph(node, ctx));
+        results.push(buildParagraph(node, ctx, listReference));
         break;
       case "heading":
         results.push(buildHeading(node, ctx));
@@ -316,7 +319,7 @@ const convertNodes = (
   };
 };
 
-const buildParagraph = ({ children }: mdast.Paragraph, ctx: Context) => {
+const buildParagraph = ({ children }: mdast.Paragraph, ctx: Context, listReference?: string) => {
   const list = ctx.list;
   const { nodes } = convertNodes(children, ctx);
 
@@ -326,31 +329,9 @@ const buildParagraph = ({ children }: mdast.Paragraph, ctx: Context) => {
         checked: list.checked,
         checkedState: { value: "2611" },
         uncheckedState: { value: "2610" },
-      })
+      }),
     );
   }
-  console.log('buildParagraph',{
-    children: nodes,
-    indent:
-      ctx.indent > 0
-        ? {
-            start: convertInchesToTwip(INDENT * ctx.indent),
-          }
-        : undefined,
-    ...(list &&
-      (list.ordered
-        ? {
-            numbering: {
-              reference: ORDERED_LIST_REF,
-              level: list.level,
-            },
-          }
-        : {
-            bullet: {
-              level: list.level,
-            },
-          })),
-  });
   return new Paragraph({
     children: nodes,
     indent:
@@ -363,8 +344,9 @@ const buildParagraph = ({ children }: mdast.Paragraph, ctx: Context) => {
       (list.ordered
         ? {
             numbering: {
-              reference: ORDERED_LIST_REF,
+              reference: listReference || ORDERED_LIST_REF,
               level: list.level,
+              levels: DEFAULT_NUMBERINGS,
             },
           }
         : {
@@ -417,31 +399,36 @@ const buildBlockquote = ({ children }: mdast.Blockquote, ctx: Context) => {
 
 const buildList = (
   { children, ordered, start: _start, spread: _spread }: mdast.List,
-  ctx: Context
+  ctx: Context,
 ) => {
-  console.log(ctx);
+  const listReference = `ordered-list-${uuidv4()}`;
+  NumberingList.push({
+    reference: listReference,
+    levels: DEFAULT_NUMBERINGS,
+  })
   const list: ListInfo = {
     level: ctx.list ? ctx.list.level + 1 : 0,
     ordered: !!ordered,
   };
   return children.flatMap((item) => {
-    console.log(list,item);
     return buildListItem(item, {
       ...ctx,
       list,
-    });
+    },
+    listReference
+  );
   });
 };
 
 const buildListItem = (
   { children, checked, spread: _spread }: mdast.ListItem,
-  ctx: Context
+  ctx: Context,
+  listReference: string,
 ) => {
   const { nodes } = convertNodes(children, {
     ...ctx,
     ...(ctx.list && { list: { ...ctx.list, checked: checked ?? undefined } }),
-  });
-  console.log(nodes);
+  },listReference);
   return nodes;
 };
 
@@ -469,7 +456,7 @@ const buildTable = ({ children, align }: mdast.Table, ctx: Context) => {
 const buildTableRow = (
   { children }: mdast.TableRow,
   ctx: Context,
-  cellAligns: AlignmentType[] | undefined
+  cellAligns: AlignmentType[] | undefined,
 ) => {
   return new TableRow({
     children: children.map((c, i) => {
@@ -481,7 +468,7 @@ const buildTableRow = (
 const buildTableCell = (
   { children }: mdast.TableCell,
   ctx: Context,
-  align: AlignmentType | undefined
+  align: AlignmentType | undefined,
 ) => {
   const { nodes } = convertNodes(children, ctx);
   return new TableCell({
@@ -517,7 +504,7 @@ const buildMath = ({ value }: mdast.Math) => {
             children: runs,
           }),
         ],
-      })
+      }),
   );
 };
 
@@ -528,7 +515,6 @@ const buildInlineMath = ({ value }: mdast.InlineMath) => {
 };
 
 const buildText = (text: string, deco: Decoration) => {
-  console.log(text,deco);
   return new TextRun({
     text,
     bold: deco.strong,
@@ -543,7 +529,7 @@ const buildBreak = (_: mdast.Break) => {
 
 const buildLink = (
   { children, url, title: _title }: mdast.Link,
-  ctx: Context
+  ctx: Context,
 ) => {
   const { nodes } = convertNodes(children, ctx);
   return new ExternalHyperlink({
@@ -554,7 +540,7 @@ const buildLink = (
 
 const buildImage = (
   { url, title: _title, alt: _alt }: mdast.Image,
-  images: ImageDataMap
+  images: ImageDataMap,
 ) => {
   const img = images[url];
   invariant(img, `Fetch image was failed: ${url}`);
@@ -579,7 +565,7 @@ const buildFootnote = ({ children }: mdast.Footnote, ctx: Context) => {
 
 const buildFootnoteDefinition = (
   { children }: mdast.FootnoteDefinition,
-  ctx: Context
+  ctx: Context,
 ) => {
   return {
     children: children.map((node) => {

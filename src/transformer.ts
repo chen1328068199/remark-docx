@@ -205,7 +205,7 @@ export const mdastToDocx = async (
       // feature detection instead of environment detection, but if Buffer exists
       // it's probably Node. If not, return the Uint8Array that JSZip returns
       // when it doesn't detect a Node environment.
-      return typeof Buffer === "function" ? Buffer.from(bufOut) : bufOut;
+      return typeof Buffer === "function" ? Buffer.from(bufOut as any) : bufOut;
     case "blob":
       return Packer.toBlob(doc);
   }
@@ -215,13 +215,14 @@ const convertNodes = (
   nodes: mdast.Content[],
   ctx: Context,
   listReference?: string,
+  isLast?:boolean
 ): ConvertNodesReturn => {
   const results: DocxContent[] = [];
   let footnotes: Footnotes = {};
   for (const node of nodes) {
     switch (node.type) {
       case "paragraph":
-        results.push(buildParagraph(node, ctx, listReference));
+        results.push(buildParagraph(node, ctx, listReference,isLast));
         break;
       case "heading":
         results.push(buildHeading(node, ctx));
@@ -318,8 +319,7 @@ const convertNodes = (
     footnotes,
   };
 };
-
-const buildParagraph = ({ children }: mdast.Paragraph, ctx: Context, listReference?: string) => {
+const buildParagraph = ({ children }: mdast.Paragraph, ctx: Context, listReference?: string,isLast?:boolean) => {
   const list = ctx.list;
   const { nodes } = convertNodes(children, ctx);
 
@@ -340,6 +340,7 @@ const buildParagraph = ({ children }: mdast.Paragraph, ctx: Context, listReferen
             start: convertInchesToTwip(INDENT * ctx.indent),
           }
         : undefined,
+    ...(isLast&&{spacing: { after: spacingAfter }}),
     ...(list &&
       (list.ordered
         ? {
@@ -353,10 +354,12 @@ const buildParagraph = ({ children }: mdast.Paragraph, ctx: Context, listReferen
             bullet: {
               level: list.level,
             },
+            spacing: { after: spacingAfter }
           })),
   });
 };
 
+const spacingAfter = 200;
 const buildHeading = ({ children, depth }: mdast.Heading, ctx: Context) => {
   let heading: HeadingLevel;
   switch (depth) {
@@ -379,10 +382,12 @@ const buildHeading = ({ children, depth }: mdast.Heading, ctx: Context) => {
       heading = HeadingLevel.HEADING_5;
       break;
   }
-  const { nodes } = convertNodes(children, ctx);
+  const { nodes } = convertNodes(children, {...ctx,deco:{strong:true,...ctx.deco}});
   return new Paragraph({
     heading,
+    spacing: { after: spacingAfter },
     children: nodes,
+    style: "color:#000000;"
   });
 };
 
@@ -410,13 +415,15 @@ const buildList = (
     level: ctx.list ? ctx.list.level + 1 : 0,
     ordered: !!ordered,
   };
-  return children.flatMap((item) => {
+  return children.flatMap((item,index) => {
+    const isLast = index===children.length-1
     return buildListItem(item, {
-      ...ctx,
-      list,
-    },
-    listReference
-  );
+        ...ctx,
+        list,
+      },
+      listReference,
+      isLast
+    );
   });
 };
 
@@ -424,11 +431,12 @@ const buildListItem = (
   { children, checked, spread: _spread }: mdast.ListItem,
   ctx: Context,
   listReference: string,
+  isLast:boolean = false
 ) => {
   const { nodes } = convertNodes(children, {
     ...ctx,
     ...(ctx.list && { list: { ...ctx.list, checked: checked ?? undefined } }),
-  },listReference);
+  },listReference,isLast);
   return nodes;
 };
 

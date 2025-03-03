@@ -4,7 +4,7 @@
 
 # Interface: DocxOptions
 
-Defined in: [src/transformer.ts:123](https://github.com/chen1328068199/remark-docx/blob/adde5e18ec9abad9a6a095877b422e05833d2dc8/src/transformer.ts#L123)
+Defined in: [src/transformer.ts:123](https://github.com/chen1328068199/remark-docx/blob/8f852939ad04b82068b9cdb326ed86d6f1e82e1c/src/transformer.ts#L123)
 
 ## Extends
 
@@ -16,7 +16,7 @@ Defined in: [src/transformer.ts:123](https://github.com/chen1328068199/remark-do
 
 > `optional` **output**: `"buffer"` \| `"blob"`
 
-Defined in: [src/transformer.ts:139](https://github.com/chen1328068199/remark-docx/blob/adde5e18ec9abad9a6a095877b422e05833d2dc8/src/transformer.ts#L139)
+Defined in: [src/transformer.ts:139](https://github.com/chen1328068199/remark-docx/blob/8f852939ad04b82068b9cdb326ed86d6f1e82e1c/src/transformer.ts#L139)
 
 Set output type of `VFile.result`. `buffer` is `Promise<Buffer>`. `blob` is `Promise<Blob>`.
 
@@ -26,7 +26,7 @@ Set output type of `VFile.result`. `buffer` is `Promise<Buffer>`. `blob` is `Pro
 
 > `optional` **imageResolver**: `ImageResolver`
 
-Defined in: [src/transformer.ts:143](https://github.com/chen1328068199/remark-docx/blob/adde5e18ec9abad9a6a095877b422e05833d2dc8/src/transformer.ts#L143)
+Defined in: [src/transformer.ts:143](https://github.com/chen1328068199/remark-docx/blob/8f852939ad04b82068b9cdb326ed86d6f1e82e1c/src/transformer.ts#L143)
 
 **You must set** if your markdown includes images. See example for [browser](https://github.com/inokawa/remark-docx/blob/main/stories/playground.stories.tsx) and [Node.js](https://github.com/inokawa/remark-docx/blob/main/src/index.spec.ts).
 
